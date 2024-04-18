@@ -15,16 +15,16 @@ paste("Kolon Sayısı: ", ncol(df), sep=" ") # 4
 # kolon veri tiplerine bak
 str(df)
 
-# kolon bazinda eksik deger var mi kontrol et
+# tum kolonlarda eksik deger iceren hucre var mi kontrol et (bu veride yok)
 colSums(is.na(df))
 
-# kolon bazinda eksik deger varsa yerini bul
+# tekil kolon bazinda (height) eksik deger varsa yerini bul (bu veride yok)
 which(is.na(df$height))
 
 # coklamis satir var mi? (bu veride yok)
 sum(duplicated(df))
 
-# coklamis satir varsa hangileri?
+# coklamis satir varsa hangileri? (bu veride yok)
 duplicates <- df[duplicated(df), ]
 duplicates
 
@@ -38,7 +38,7 @@ ggplot(df, aes(x=weight)) + geom_histogram() + ggtitle("Weight Verisi Dağılım
 ggplot(df, aes(x=age)) + geom_histogram() + ggtitle("Age Verisi Dağılımı")
 ggplot(df, aes(x=male)) + geom_histogram() + ggtitle("Male Verisi Dağılımı")
 
-# outlier/aykırı deger tespiti
+# outlier/aykiri deger tespiti
 boxplot(df)
 
 # height bazinda alt/lower ve ust/upper ceyreklikleri/quartile hesaplama
@@ -60,8 +60,8 @@ df_aykiri_degerler
 
 # korelasyon matrisi
 library(corrplot)
-corr_mat <- cor(df)
+corr_mat <- cor(df[c("height", "weight", "age", "male")])
 corrplot(corr_mat, method="number")
 
 # scatterplot/sacilim grafigi olusturma (ikili ciftler halinde kontrol)
-plot(df)
+plot(df[c("height", "weight", "age", "male")])
