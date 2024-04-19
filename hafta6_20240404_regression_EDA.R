@@ -13,8 +13,8 @@ df <- read.csv("https://raw.githubusercontent.com/stedy/Machine-Learning-with-R-
 head(df)
 
 # satir-kolon sayilarini kontrol et
-paste("Satır Sayısı: ", nrow(df), sep=" ") # 1338
-paste("Kolon Sayısı: ", ncol(df), sep=" ") # 7
+paste("Satır Sayısı:", nrow(df), sep=" ") # 1338
+paste("Kolon Sayısı:", ncol(df), sep=" ") # 7
 
 # kolon veri tiplerine bak
 str(df)
@@ -28,47 +28,70 @@ which(is.na(df$age))
 # coklamis satir var mi? (bu veride 1 tane var)
 sum(duplicated(df))
 
-# coklamis satir varsa hangileri? (bu veride yok)
+# coklamis satir varsa hangileri?
 duplicates <- df[duplicated(df), ]
 duplicates
 
+# coklamis satirlari veriden cikar
+df_temiz <- df[!duplicated(df), ]
+df_temiz
+
 # veriyi ozetlestirerek kolon bazinda temel istatistiklere bak
-summary(df)
+summary(df_temiz)
 
 # her bir kolon icin veri frekansina/dagilimlarina bak, histogram uretimi
 library(ggplot2)
-ggplot(df, aes(x=age)) + geom_histogram() + ggtitle("Yaş Verisi Dağılımı")
-ggplot(df, aes(x=sex)) + geom_histogram() + ggtitle("Cinsiyet Verisi Dağılımı")
-ggplot(df, aes(x=bmi)) + geom_histogram() + ggtitle("Vücut Kitle Endeksi Verisi Dağılımı")
-ggplot(df, aes(x=children)) + geom_histogram() + ggtitle("Çocuk Sayısı Verisi Dağılımı")
-ggplot(df, aes(x=smoker)) + geom_histogram(stat="count") + ggtitle("Sigara İçen ve İçmeyen Verisi Dağılımı")
-ggplot(df, aes(x=region)) + geom_histogram(stat="count") + ggtitle("Yaşanılan Bölge Verisi Dağılımı")
-ggplot(df, aes(x=charges)) + geom_histogram() + ggtitle("Sigorta Giderleri Verisi Dağılımı")
+ggplot(df_temiz, aes(x=age)) + geom_histogram() + ggtitle("Yaş Verisi Dağılımı")
+ggplot(df_temiz, aes(x=sex)) + geom_histogram() + ggtitle("Cinsiyet Verisi Dağılımı")
+ggplot(df_temiz, aes(x=bmi)) + geom_histogram() + ggtitle("Vücut Kitle Endeksi Verisi Dağılımı")
+ggplot(df_temiz, aes(x=children)) + geom_histogram() + ggtitle("Çocuk Sayısı Verisi Dağılımı")
+ggplot(df_temiz, aes(x=smoker)) + geom_histogram(stat="count") + ggtitle("Sigara İçen ve İçmeyen Verisi Dağılımı")
+ggplot(df_temiz, aes(x=region)) + geom_histogram(stat="count") + ggtitle("Yaşanılan Bölge Verisi Dağılımı")
+ggplot(df_temiz, aes(x=charges)) + geom_histogram() + ggtitle("Sigorta Giderleri Verisi Dağılımı")
 
 # outlier/aykiri deger tespiti
-boxplot(df[c("age", "bmi", "children", "charges")]) # numerik degiskenler secildi
+boxplot(df_temiz[c("age", "bmi", "children", "charges")]) # numerik degiskenler secildi
 
-# height bazinda alt/lower ve ust/upper ceyreklikleri/quartile hesaplama
-Q1 <- quantile(df$height, 0.25)
-Q3 <- quantile(df$height, 0.75)
-cat("height icin -> ", "alt ceyreklik: ", Q1, "ust ceyreklik: ", Q3)
+# "charges" bazinda alt/lower ve ust/upper ceyreklikleri/quartile hesaplama
+Q1 <- quantile(df_temiz$charges, 0.25)
+Q3 <- quantile(df_temiz$charges, 0.75)
+cat("charges icin -> ", "alt ceyreklik: ", Q1, "ust ceyreklik: ", Q3)
 
-# height bazinda alt ve ust sinir hesaplama
+# "charges" bazinda alt ve ust sinir hesaplama
 IQR <- Q3 - Q1
 lower_bound <- Q1 - 1.5 * IQR
 upper_bound <- Q3 + 1.5 * IQR
-cat("height icin -> ", "alt sinir: ", lower_bound, "ust sinir: ", upper_bound)
+cat("charges icin -> ", "alt sinir: ", lower_bound, "ust sinir: ", upper_bound)
 
-# height bazinda aykiri deger iceren satirlari belirleme
-outliers <- df$height < lower_bound | df$height > upper_bound
-df$aykiri_deger_mi <- outliers
-df_aykiri_degerler <- df[df$aykiri_deger_mi == TRUE, ]
-df_aykiri_degerler
+# "charges" bazinda aykiri deger iceren satirlari belirleme
+outliers <- df_temiz$charges < lower_bound | df_temiz$charges > upper_bound
+df_temiz$aykiri_deger_mi <- outliers
+df_aykiri_degerler <- df_temiz[df_temiz$aykiri_deger_mi == TRUE, ]
+paste("Toplam Aykırı Değer İçeren Satır Sayısı:", nrow(df_aykiri_degerler), sep=" ")
+
+# "charges" bazinda aykiri degerlerden arindirilmis satirlari getir
+df_hazir <- df_temiz[df_temiz$aykiri_deger_mi == FALSE, ]
+df_hazir
+
+# kategorik degiskenler icin dummy encoding
+library(caret)
+dummy_sex <- dummyVars(~ sex, data=df_hazir, sep="_")
+df_sex_combined <- data.frame(predict(dummy_sex, newdata=df_hazir))
+df_all <- cbind(df_hazir, df_sex_combined)
+
+dummy_smoker <- dummyVars(~ smoker, data=df_hazir, sep="_")
+df_smoker_combined <- data.frame(predict(dummy_smoker, newdata=df_hazir))
+df_all <- cbind(df_all, df_smoker_combined)
+
+dummy_region <- dummyVars(~ region, data=df_hazir, sep="_")
+df_region_combined <- data.frame(predict(dummy_region, newdata=df_hazir))
+df_all <- cbind(df_all, df_region_combined)
+df_all
 
 # korelasyon matrisi
 library(corrplot)
-corr_mat <- cor(df[c("height", "weight", "age", "male")])
+corr_mat <- cor(df_all[c("age", "bmi", "children", "charges")]) # numerik degiskenler secildi
 corrplot(corr_mat, method="number")
 
 # scatterplot/sacilim grafigi olusturma (ikili ciftler halinde kontrol)
-plot(df[c("height", "weight", "age", "male")])
+plot(df_all[c("age", "bmi", "children", "charges")])
